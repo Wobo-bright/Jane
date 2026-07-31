@@ -17,6 +17,13 @@ let touchEndX = 0;
 let scrollFrame = 0;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Music state management
+let isMusicPlaying = false;
+let musicInitialized = false;
+let autoplayAttempted = false;
+let visibilityListenerAdded = false;
+let interactionListenersAdded = false;
+
 function goToSlide(index) {
   const safeIndex = Math.max(0, Math.min(slides.length - 1, index));
   currentIndex = safeIndex;
@@ -71,23 +78,201 @@ function animateLetter() {
   }, 32);
 }
 
-function toggleMusic() {
+// Music control functions
+function playMusic() {
   if (!backgroundMusic) return;
-  if (backgroundMusic.paused) {
+  if (backgroundMusic.paused && !backgroundMusic.ended) {
     backgroundMusic.play().catch(() => {
+      // Handle autoplay restriction gracefully
       musicToggle.textContent = 'Play Music';
+      isMusicPlaying = false;
     });
     musicToggle.textContent = 'Pause Music';
-  } else {
-    backgroundMusic.pause();
-    musicToggle.textContent = 'Play Music';
+    isMusicPlaying = true;
   }
 }
 
+function pauseMusic() {
+  if (!backgroundMusic) return;
+  if (!backgroundMusic.paused) {
+    backgroundMusic.pause();
+    musicToggle.textContent = 'Play Music';
+    isMusicPlaying = false;
+  }
+}
+
+function toggleMusic() {
+  if (!backgroundMusic) return;
+  if (backgroundMusic.paused) {
+    playMusic();
+  } else {
+    pauseMusic();
+  }
+}
+
+function attemptAutoplay() {
+  if (autoplayAttempted || !backgroundMusic) return;
+  autoplayAttempted = true;
+  
+  backgroundMusic.volume = 0.5; // Set a reasonable volume
+  
+  // Try to play immediately
+  backgroundMusic.play().then(() => {
+    musicToggle.textContent = 'Pause Music';
+    isMusicPlaying = true;
+    musicInitialized = true;
+    // If autoplay succeeds, we don't need interaction listeners
+    removeInteractionListeners();
+  }).catch(() => {
+    // Autoplay blocked, set up interaction listeners
+    musicToggle.textContent = 'Play Music';
+    isMusicPlaying = false;
+    addInteractionListeners();
+  });
+}
+
+function addInteractionListeners() {
+  if (interactionListenersAdded) return;
+  interactionListenersAdded = true;
+  
+  const interactionEvents = ['click', 'touchstart', 'keydown', 'pointerdown', 'scroll'];
+  const handleInteraction = () => {
+    if (!backgroundMusic.paused) return; // Already playing
+    if (musicInitialized) return; // Already initialized
+    
+    backgroundMusic.play().then(() => {
+      musicToggle.textContent = 'Pause Music';
+      isMusicPlaying = true;
+      musicInitialized = true;
+      removeInteractionListeners();
+    }).catch(() => {
+      // Still can't play, keep listeners
+    });
+  };
+  
+  interactionEvents.forEach(event => {
+    document.addEventListener(event, handleInteraction, { once: true });
+  });
+  
+  // Store for cleanup
+  window._interactionHandlers = handleInteraction;
+  window._interactionEvents = interactionEvents;
+}
+
+function removeInteractionListeners() {
+  if (!interactionListenersAdded) return;
+  interactionListenersAdded = false;
+  
+  if (window._interactionHandlers && window._interactionEvents) {
+    window._interactionEvents.forEach(event => {
+      document.removeEventListener(event, window._interactionHandlers);
+    });
+  }
+}
+
+function setupVisibilityHandling() {
+  if (visibilityListenerAdded) return;
+  visibilityListenerAdded = true;
+  
+  const handleVisibilityChange = () => {
+    if (!backgroundMusic) return;
+    
+    if (document.hidden) {
+      // Page is hidden, pause if playing
+      if (!backgroundMusic.paused) {
+        pauseMusic();
+        // Store that we paused due to visibility
+        backgroundMusic._pausedByVisibility = true;
+      }
+    } else {
+      // Page is visible again
+      if (backgroundMusic.paused && backgroundMusic._pausedByVisibility) {
+        // Only resume if we paused it ourselves
+        playMusic();
+        backgroundMusic._pausedByVisibility = false;
+      }
+    }
+  };
+  
+  const handlePageHide = () => {
+    if (!backgroundMusic) return;
+    if (!backgroundMusic.paused) {
+      pauseMusic();
+      backgroundMusic._pausedByPageHide = true;
+    }
+  };
+  
+  const handlePageShow = () => {
+    if (!backgroundMusic) return;
+    if (backgroundMusic.paused && backgroundMusic._pausedByPageHide) {
+      playMusic();
+      backgroundMusic._pausedByPageHide = false;
+    }
+  };
+  
+  const handleBlur = () => {
+    if (!backgroundMusic) return;
+    // Don't pause on blur for better user experience
+    // Just update state if needed
+  };
+  
+  const handleFocus = () => {
+    if (!backgroundMusic) return;
+    // Check if we should resume playing
+    if (backgroundMusic.paused && backgroundMusic._pausedByVisibility) {
+      // Resume if we were playing before visibility change
+      playMusic();
+      backgroundMusic._pausedByVisibility = false;
+    }
+  };
+  
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('pagehide', handlePageHide);
+  window.addEventListener('pageshow', handlePageShow);
+  window.addEventListener('blur', handleBlur);
+  window.addEventListener('focus', handleFocus);
+  
+  // Store for cleanup
+  window._visibilityHandlers = {
+    handleVisibilityChange,
+    handlePageHide,
+    handlePageShow,
+    handleBlur,
+    handleFocus
+  };
+}
+
+// Enhanced toggle music to work with our new system
+function enhancedToggleMusic() {
+  if (!backgroundMusic) return;
+  if (backgroundMusic.paused) {
+    playMusic();
+    musicInitialized = true;
+  } else {
+    pauseMusic();
+  }
+}
+
+// Music initialization
+function initMusic() {
+  if (!backgroundMusic) return;
+  
+  // Set up visibility handling
+  setupVisibilityHandling();
+  
+  // Attempt autoplay
+  attemptAutoplay();
+  
+  // Override toggle music with enhanced version
+  const originalToggle = musicToggle._listeners;
+  musicToggle.removeEventListener('click', toggleMusic);
+  musicToggle.addEventListener('click', enhancedToggleMusic);
+}
+
+// Call original functions
 prevBtn.addEventListener('click', () => goToSlide(currentIndex - 1));
 nextBtn.addEventListener('click', () => goToSlide(currentIndex + 1));
 continueBtn.addEventListener('click', () => goToSlide(1));
-musicToggle.addEventListener('click', toggleMusic);
 
 carousel.addEventListener('wheel', (event) => {
   if (Math.abs(event.deltaY) > 20) {
@@ -152,3 +337,6 @@ slides.forEach((slide) => observer.observe(slide));
 updateCounter();
 setInterval(updateCounter, 1000);
 goToSlide(0);
+
+// Initialize music system
+initMusic();

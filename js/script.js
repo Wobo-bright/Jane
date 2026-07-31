@@ -23,6 +23,7 @@ let musicInitialized = false;
 let autoplayAttempted = false;
 let visibilityListenerAdded = false;
 let interactionListenersAdded = false;
+let wasPlayingBeforeHide = false;
 
 function goToSlide(index) {
   const safeIndex = Math.max(0, Math.min(slides.length - 1, index));
@@ -82,13 +83,13 @@ function animateLetter() {
 function playMusic() {
   if (!backgroundMusic) return;
   if (backgroundMusic.paused && !backgroundMusic.ended) {
-    backgroundMusic.play().catch(() => {
-      // Handle autoplay restriction gracefully
+    backgroundMusic.play().then(() => {
+      musicToggle.textContent = 'Pause Music';
+      isMusicPlaying = true;
+    }).catch(() => {
       musicToggle.textContent = 'Play Music';
       isMusicPlaying = false;
     });
-    musicToggle.textContent = 'Pause Music';
-    isMusicPlaying = true;
   }
 }
 
@@ -105,6 +106,7 @@ function toggleMusic() {
   if (!backgroundMusic) return;
   if (backgroundMusic.paused) {
     playMusic();
+    musicInitialized = true;
   } else {
     pauseMusic();
   }
@@ -114,17 +116,15 @@ function attemptAutoplay() {
   if (autoplayAttempted || !backgroundMusic) return;
   autoplayAttempted = true;
   
-  backgroundMusic.volume = 0.5; // Set a reasonable volume
+  backgroundMusic.volume = 0.5;
   
   // Try to play immediately
   backgroundMusic.play().then(() => {
     musicToggle.textContent = 'Pause Music';
     isMusicPlaying = true;
     musicInitialized = true;
-    // If autoplay succeeds, we don't need interaction listeners
     removeInteractionListeners();
   }).catch(() => {
-    // Autoplay blocked, set up interaction listeners
     musicToggle.textContent = 'Play Music';
     isMusicPlaying = false;
     addInteractionListeners();
@@ -135,10 +135,9 @@ function addInteractionListeners() {
   if (interactionListenersAdded) return;
   interactionListenersAdded = true;
   
-  const interactionEvents = ['click', 'touchstart', 'keydown', 'pointerdown', 'scroll'];
   const handleInteraction = () => {
-    if (!backgroundMusic.paused) return; // Already playing
-    if (musicInitialized) return; // Already initialized
+    if (!backgroundMusic.paused) return;
+    if (musicInitialized) return;
     
     backgroundMusic.play().then(() => {
       musicToggle.textContent = 'Pause Music';
@@ -150,23 +149,23 @@ function addInteractionListeners() {
     });
   };
   
-  interactionEvents.forEach(event => {
-    document.addEventListener(event, handleInteraction, { once: true });
-  });
+  document.addEventListener('click', handleInteraction, { once: true });
+  document.addEventListener('touchstart', handleInteraction, { once: true });
+  document.addEventListener('keydown', handleInteraction, { once: true });
+  document.addEventListener('pointerdown', handleInteraction, { once: true });
   
-  // Store for cleanup
-  window._interactionHandlers = handleInteraction;
-  window._interactionEvents = interactionEvents;
+  window._interactionHandler = handleInteraction;
 }
 
 function removeInteractionListeners() {
   if (!interactionListenersAdded) return;
   interactionListenersAdded = false;
   
-  if (window._interactionHandlers && window._interactionEvents) {
-    window._interactionEvents.forEach(event => {
-      document.removeEventListener(event, window._interactionHandlers);
-    });
+  if (window._interactionHandler) {
+    document.removeEventListener('click', window._interactionHandler);
+    document.removeEventListener('touchstart', window._interactionHandler);
+    document.removeEventListener('keydown', window._interactionHandler);
+    document.removeEventListener('pointerdown', window._interactionHandler);
   }
 }
 
@@ -178,98 +177,40 @@ function setupVisibilityHandling() {
     if (!backgroundMusic) return;
     
     if (document.hidden) {
-      // Page is hidden, pause if playing
       if (!backgroundMusic.paused) {
+        wasPlayingBeforeHide = true;
         pauseMusic();
-        // Store that we paused due to visibility
-        backgroundMusic._pausedByVisibility = true;
+      } else {
+        wasPlayingBeforeHide = false;
       }
     } else {
-      // Page is visible again
-      if (backgroundMusic.paused && backgroundMusic._pausedByVisibility) {
-        // Only resume if we paused it ourselves
+      if (wasPlayingBeforeHide && backgroundMusic.paused) {
         playMusic();
-        backgroundMusic._pausedByVisibility = false;
+        wasPlayingBeforeHide = false;
       }
-    }
-  };
-  
-  const handlePageHide = () => {
-    if (!backgroundMusic) return;
-    if (!backgroundMusic.paused) {
-      pauseMusic();
-      backgroundMusic._pausedByPageHide = true;
-    }
-  };
-  
-  const handlePageShow = () => {
-    if (!backgroundMusic) return;
-    if (backgroundMusic.paused && backgroundMusic._pausedByPageHide) {
-      playMusic();
-      backgroundMusic._pausedByPageHide = false;
-    }
-  };
-  
-  const handleBlur = () => {
-    if (!backgroundMusic) return;
-    // Don't pause on blur for better user experience
-    // Just update state if needed
-  };
-  
-  const handleFocus = () => {
-    if (!backgroundMusic) return;
-    // Check if we should resume playing
-    if (backgroundMusic.paused && backgroundMusic._pausedByVisibility) {
-      // Resume if we were playing before visibility change
-      playMusic();
-      backgroundMusic._pausedByVisibility = false;
     }
   };
   
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  window.addEventListener('pagehide', handlePageHide);
-  window.addEventListener('pageshow', handlePageShow);
-  window.addEventListener('blur', handleBlur);
-  window.addEventListener('focus', handleFocus);
-  
-  // Store for cleanup
-  window._visibilityHandlers = {
-    handleVisibilityChange,
-    handlePageHide,
-    handlePageShow,
-    handleBlur,
-    handleFocus
-  };
+  window._visibilityHandler = handleVisibilityChange;
 }
 
-// Enhanced toggle music to work with our new system
-function enhancedToggleMusic() {
-  if (!backgroundMusic) return;
-  if (backgroundMusic.paused) {
-    playMusic();
-    musicInitialized = true;
-  } else {
-    pauseMusic();
-  }
-}
-
-// Music initialization
+// Initialize everything
 function initMusic() {
   if (!backgroundMusic) return;
   
-  // Set up visibility handling
   setupVisibilityHandling();
-  
-  // Attempt autoplay
   attemptAutoplay();
   
-  // Override toggle music with enhanced version
-  const originalToggle = musicToggle._listeners;
-  musicToggle.removeEventListener('click', toggleMusic);
-  musicToggle.addEventListener('click', enhancedToggleMusic);
+  // Replace the original click listener
+  const newToggle = musicToggle.cloneNode(true);
+  musicToggle.parentNode.replaceChild(newToggle, musicToggle);
+  newToggle.addEventListener('click', toggleMusic);
+  // Update reference
+  window.musicToggle = newToggle;
 }
 
-// Call original functions
+// Original event listeners
 prevBtn.addEventListener('click', () => goToSlide(currentIndex - 1));
 nextBtn.addEventListener('click', () => goToSlide(currentIndex + 1));
 continueBtn.addEventListener('click', () => goToSlide(1));
@@ -338,5 +279,5 @@ updateCounter();
 setInterval(updateCounter, 1000);
 goToSlide(0);
 
-// Initialize music system
+// Initialize music system after everything else
 initMusic();

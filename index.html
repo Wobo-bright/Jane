@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A romantic, premium-feeling carousel website for Girlfriend's Day."
+    />
+    <title>Happy Girlfriend's Day</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <button class="nav-button prev" id="prevBtn" type="button" aria-label="Previous slide">
+        <span aria-hidden="true">←</span>
+      </button>
+      <button class="nav-button next" id="nextBtn" type="button" aria-label="Next slide">
+        <span aria-hidden="true">→</span>
+      </button>
+
+      <main class="carousel" id="carousel" tabindex="0" aria-label="Romantic story carousel">
+        <section class="slide intro-slide" data-title="Intro">
+          <div class="slide-content intro-content">
+            <p class="eyebrow">For my favorite person</p>
+            <h1>Happy Girlfriend's Day Jane</h1>
+            <p class="intro-copy">
+              This is a gentle reminder of how much I love you.
+            </p>
+
+            <div class="counter-card" aria-label="Relationship duration counter">
+              <div class="counter-item">
+                <span class="counter-value" id="daysCounter">0</span>
+                <span class="counter-label">Days</span>
+              </div>
+              <div class="counter-item">
+                <span class="counter-value" id="hoursCounter">0</span>
+                <span class="counter-label">Hours</span>
+              </div>
+              <div class="counter-item">
+                <span class="counter-value" id="minutesCounter">0</span>
+                <span class="counter-label">Minutes</span>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="ghost-button" id="musicToggle" type="button">Play Music</button>
+              <button class="primary-button" id="continueBtn" type="button">Continue</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide flower-slide" data-title="Flowers">
+          <div class="slide-content flower-content">
+            <div class="flower-illustration">
+              <img src="assets/images/bouquet.svg" alt="An elegant bouquet of roses and orchids" />
+            </div>
+            <div class="flower-copy">
+              <p class="eyebrow">A virtual bouquet</p>
+              <h2>For every soft smile and beauty you exude when i look at you.</h2>
+              <p>
+               Since i couldn't give you flowers in person, i made a bouquet here for you.
+               I know no flower no matter how pretty they might seem matches how hot, sexy and intoxicating as you.
+            </p> 
+            </div>
+          </div>
+        </section>
+
+        <section class="slide love-slide" data-title="Things I Love About You">
+          <div class="slide-content">
+            <p class="eyebrow">Things I love about you</p>
+            <h2>There is so much I adore about you.</h2>
+            <div class="card-grid">
+              <article class="love-card">
+                <h3>Your eyes</h3>
+                <p>They are prettiest pairs I've ever seen. Both beautiful and consuming at the same time</p>
+              </article>
+              <article class="love-card">
+                <h3>Your wit</h3>
+                <p>Your so so smart</p>
+              </article>
+              <article class="love-card">
+                <h3>Your heart</h3>
+                <p>Deep, thoughtful,fiesty and caring</p>
+              </article>
+              <article class="love-card">
+                <h3>Your ass</h3>
+                <p>That soft bundle of joy, don't even get me started. It's everything i could ask for and more. for some reason you want it bigger(Ngl I'd still love that)</p>
+              </article> 
+              <article class="love-card">
+                <h3>Your titties</h3>
+                <p>Not gonna say much we both know why</p>
+              </article> 
+            </div>
+          </div>
+        </section>
+
+        <section class="slide memories-slide" data-title="Our Memories">
+          <div class="slide-content timeline-content">
+            <p class="eyebrow">Our memories</p>
+            <h2>Some moments stay with me long after they pass.</h2>
+            <div class="timeline">
+              <div class="timeline-item">
+                <span class="timeline-marker"></span>
+                <p>Late night conversations that made even silence feel intimate.</p>
+              </div>
+              <div class="timeline-item">
+                <span class="timeline-marker"></span>
+                <p>Our first hug, kiss and everything after that</p>
+              </div>
+              <div class="timeline-item">
+                <span class="timeline-marker"></span>
+                <p>Little moments that made me smile when I thought I was having a difficult day.</p>
+              </div>
+              <div class="timeline-item">
+                <span class="timeline-marker"></span>
+                <p>Messages I still read in my head because they felt like a soft hand on my heart.</p>
+              </div>
+              <div class="timeline-item">
+                <span class="timeline-marker"></span>
+                <p>The simple little things that stayed with me long after the day was done.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="slide future-slide" data-title="Future Memories">
+          <div class="slide-content">
+            <p class="eyebrow">Memories we have yet to make</p>
+            <h2>And I hope we get to create all of these together.</h2>
+            <ul class="checklist">
+              <li><span>✦</span>Our first silly picture and vidoes together</li>
+              <li><span>✦</span>Spending a whole day or night together</li>
+              <li><span>✦</span>completing our watchlist together without worrying about the world</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="slide letter-slide" data-title="Letter">
+          <div class="slide-content letter-content">
+            <p class="eyebrow">A little letter</p>
+            <div class="letter-card">
+              <p class="letter-body" id="letterBody"></p>
+              <p class="signature">With all my love,<br />Bright</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <audio id="backgroundMusic" src="assets/music/New West - Those Eyes(M4A_128K).m4a" preload="auto" loop></audio>
+
+    <script src="js/script.js"></script>
+  </body>
+</html>

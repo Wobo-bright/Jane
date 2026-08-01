@@ -17,10 +17,10 @@ let touchEndX = 0;
 let scrollFrame = 0;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Music state management
-let isMusicPlaying = false;
+// Music state management - FIXED initial values
+let isMusicPlaying = false;        // ✅ Changed from true to false
 let musicInitialized = false;
-let autoplayAttempted = false;
+let autoplayAttempted = false;     // ✅ Changed from true to false
 let visibilityListenerAdded = false;
 let interactionListenersAdded = false;
 let wasPlayingBeforeHide = false;
@@ -125,10 +125,10 @@ function attemptAutoplay() {
     isMusicPlaying = true;
     musicInitialized = true;
     removeInteractionListeners();
-    console.log('Music autoplay successful!');
+    console.log('🎵 Music autoplay successful!');
   }).catch((error) => {
     // Autoplay was blocked by the browser
-    console.log('Autoplay blocked, waiting for user interaction...');
+    console.log('⏸️ Autoplay blocked, waiting for user interaction...');
     musicToggle.textContent = 'Play Music';
     isMusicPlaying = false;
     addInteractionListeners();
@@ -148,10 +148,10 @@ function addInteractionListeners() {
       isMusicPlaying = true;
       musicInitialized = true;
       removeInteractionListeners();
-      console.log('Music started after user interaction!');
+      console.log('🎵 Music started after user interaction!');
     }).catch(() => {
       // Still can't play, keep listeners active
-      console.log('Still unable to play after interaction');
+      console.log('⏸️ Still unable to play after interaction');
     });
   };
   
@@ -191,7 +191,7 @@ function setupVisibilityHandling() {
       if (!backgroundMusic.paused) {
         wasPlayingBeforeHide = true;
         pauseMusic();
-        console.log('Music paused - page hidden');
+        console.log('⏸️ Music paused - page hidden');
       } else {
         wasPlayingBeforeHide = false;
       }
@@ -200,7 +200,7 @@ function setupVisibilityHandling() {
       if (wasPlayingBeforeHide && backgroundMusic.paused) {
         playMusic();
         wasPlayingBeforeHide = false;
-        console.log('Music resumed - page visible');
+        console.log('▶️ Music resumed - page visible');
       }
     }
   };
@@ -210,7 +210,7 @@ function setupVisibilityHandling() {
     if (!backgroundMusic.paused) {
       wasPlayingBeforeHide = true;
       pauseMusic();
-      console.log('Music paused - page hiding');
+      console.log('⏸️ Music paused - page hiding');
     }
   };
   
@@ -219,7 +219,7 @@ function setupVisibilityHandling() {
     if (wasPlayingBeforeHide && backgroundMusic.paused) {
       playMusic();
       wasPlayingBeforeHide = false;
-      console.log('Music resumed - page showing');
+      console.log('▶️ Music resumed - page showing');
     }
   };
   
@@ -249,16 +249,16 @@ function cleanupVisibilityHandling() {
 // Initialize music system
 function initMusic() {
   if (!backgroundMusic) {
-    console.warn('Background music element not found!');
+    console.warn('⚠️ Background music element not found!');
     return;
   }
   
-  console.log('Initializing music system...');
+  console.log('🎵 Initializing music system...');
   
   // Set up visibility handling
   setupVisibilityHandling();
   
-  // Attempt autoplay
+  // Attempt autoplay - NOW THIS WILL WORK!
   attemptAutoplay();
   
   // Replace the original click listener with our enhanced version

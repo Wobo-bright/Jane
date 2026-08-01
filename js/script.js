@@ -116,6 +116,7 @@ function attemptAutoplay() {
   if (autoplayAttempted || !backgroundMusic) return;
   autoplayAttempted = true;
   
+  // Set a comfortable volume
   backgroundMusic.volume = 0.5;
   
   // Try to play immediately
@@ -124,7 +125,10 @@ function attemptAutoplay() {
     isMusicPlaying = true;
     musicInitialized = true;
     removeInteractionListeners();
-  }).catch(() => {
+    console.log('Music autoplay successful!');
+  }).catch((error) => {
+    // Autoplay was blocked by the browser
+    console.log('Autoplay blocked, waiting for user interaction...');
     musicToggle.textContent = 'Play Music';
     isMusicPlaying = false;
     addInteractionListeners();
@@ -144,15 +148,19 @@ function addInteractionListeners() {
       isMusicPlaying = true;
       musicInitialized = true;
       removeInteractionListeners();
+      console.log('Music started after user interaction!');
     }).catch(() => {
-      // Still can't play, keep listeners
+      // Still can't play, keep listeners active
+      console.log('Still unable to play after interaction');
     });
   };
   
+  // Add listeners for various user interactions
   document.addEventListener('click', handleInteraction, { once: true });
   document.addEventListener('touchstart', handleInteraction, { once: true });
   document.addEventListener('keydown', handleInteraction, { once: true });
   document.addEventListener('pointerdown', handleInteraction, { once: true });
+  document.addEventListener('scroll', handleInteraction, { once: true });
   
   window._interactionHandler = handleInteraction;
 }
@@ -166,6 +174,8 @@ function removeInteractionListeners() {
     document.removeEventListener('touchstart', window._interactionHandler);
     document.removeEventListener('keydown', window._interactionHandler);
     document.removeEventListener('pointerdown', window._interactionHandler);
+    document.removeEventListener('scroll', window._interactionHandler);
+    delete window._interactionHandler;
   }
 }
 
@@ -177,37 +187,88 @@ function setupVisibilityHandling() {
     if (!backgroundMusic) return;
     
     if (document.hidden) {
+      // Page is hidden - pause if playing
       if (!backgroundMusic.paused) {
         wasPlayingBeforeHide = true;
         pauseMusic();
+        console.log('Music paused - page hidden');
       } else {
         wasPlayingBeforeHide = false;
       }
     } else {
+      // Page is visible again - resume if it was playing before
       if (wasPlayingBeforeHide && backgroundMusic.paused) {
         playMusic();
         wasPlayingBeforeHide = false;
+        console.log('Music resumed - page visible');
       }
     }
   };
   
+  const handlePageHide = () => {
+    if (!backgroundMusic) return;
+    if (!backgroundMusic.paused) {
+      wasPlayingBeforeHide = true;
+      pauseMusic();
+      console.log('Music paused - page hiding');
+    }
+  };
+  
+  const handlePageShow = () => {
+    if (!backgroundMusic) return;
+    if (wasPlayingBeforeHide && backgroundMusic.paused) {
+      playMusic();
+      wasPlayingBeforeHide = false;
+      console.log('Music resumed - page showing');
+    }
+  };
+  
   document.addEventListener('visibilitychange', handleVisibilityChange);
-  window._visibilityHandler = handleVisibilityChange;
+  window.addEventListener('pagehide', handlePageHide);
+  window.addEventListener('pageshow', handlePageShow);
+  
+  window._visibilityHandlers = {
+    visibilitychange: handleVisibilityChange,
+    pagehide: handlePageHide,
+    pageshow: handlePageShow
+  };
 }
 
-// Initialize everything
-function initMusic() {
-  if (!backgroundMusic) return;
+function cleanupVisibilityHandling() {
+  if (!visibilityListenerAdded) return;
   
+  if (window._visibilityHandlers) {
+    document.removeEventListener('visibilitychange', window._visibilityHandlers.visibilitychange);
+    window.removeEventListener('pagehide', window._visibilityHandlers.pagehide);
+    window.removeEventListener('pageshow', window._visibilityHandlers.pageshow);
+    delete window._visibilityHandlers;
+  }
+  visibilityListenerAdded = false;
+}
+
+// Initialize music system
+function initMusic() {
+  if (!backgroundMusic) {
+    console.warn('Background music element not found!');
+    return;
+  }
+  
+  console.log('Initializing music system...');
+  
+  // Set up visibility handling
   setupVisibilityHandling();
+  
+  // Attempt autoplay
   attemptAutoplay();
   
-  // Replace the original click listener
+  // Replace the original click listener with our enhanced version
   const newToggle = musicToggle.cloneNode(true);
   musicToggle.parentNode.replaceChild(newToggle, musicToggle);
   newToggle.addEventListener('click', toggleMusic);
   // Update reference
   window.musicToggle = newToggle;
+  // Also update the global reference
+  document.getElementById('musicToggle') && (window.musicToggleElement = newToggle);
 }
 
 // Original event listeners
@@ -281,3 +342,6 @@ goToSlide(0);
 
 // Initialize music system after everything else
 initMusic();
+
+console.log('💖 Website loaded successfully with autoplay music!');
+console.log('🎵 Music will try to autoplay immediately, or start on first interaction.');

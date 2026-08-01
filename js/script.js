@@ -17,10 +17,10 @@ let touchEndX = 0;
 let scrollFrame = 0;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Music state management - FIXED initial values
-let isMusicPlaying = false;        // ✅ Changed from true to false
+// Music state management
+let isMusicPlaying = false;
 let musicInitialized = false;
-let autoplayAttempted = false;     // ✅ Changed from true to false
+let autoplayAttempted = false;
 let visibilityListenerAdded = false;
 let interactionListenersAdded = false;
 let wasPlayingBeforeHide = false;
@@ -258,7 +258,7 @@ function initMusic() {
   // Set up visibility handling
   setupVisibilityHandling();
   
-  // Attempt autoplay - NOW THIS WILL WORK!
+  // Attempt autoplay
   attemptAutoplay();
   
   // Replace the original click listener with our enhanced version
